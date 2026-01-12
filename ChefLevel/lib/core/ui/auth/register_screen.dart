@@ -195,7 +195,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   Row(
                     children: [
                       Container(
-                        width: 160,
+                        width: 140,
                         padding: EdgeInsets.only(left: 10.0, right: 5.0),
                         decoration: BoxDecoration(
                           color: Colors.black.withOpacity(0.6),

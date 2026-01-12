@@ -301,7 +301,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       Visibility(
                         visible: _toggleValue == -1 ? true : false,
                         child: Container(
-                          width: 160,
+                          width: 140,
                           padding: EdgeInsets.only(left: 10.0, right: 5.0),
                           decoration: BoxDecoration(
                             color: AppColor.lightBlack.withOpacity(1.0),
@@ -466,7 +466,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                             recognizer: TapGestureRecognizer()
                               ..onTap = () {
-                                Navigator.pushReplacement(
+                                Navigator.push(
                                   context,
                                   MaterialPageRoute(
                                     builder: (_) => RegisterScreen(),
