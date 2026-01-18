@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:food_chef/core/domain/models/home/home_recipes_model.dart';
 import 'package:food_chef/core/providers/home_provider.dart';
+import 'package:food_chef/core/utils/function/utility.dart';
 import 'package:provider/provider.dart';
 
 import '../../../utils/constant/colors/app_color.dart';
@@ -18,19 +19,18 @@ class _RecipeDetailsScreenState extends State<RecipeDetailsScreen>
   int quantity = 1;
   late TabController _tabController;
   TailoredRecipe? recipeDetails;
+  late HomeScreenProvider homeProvider;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 4, vsync: this);
+    homeProvider = Provider.of<HomeScreenProvider>(context, listen: false);
     setData();
   }
 
   Future<void> setData() async {
-    recipeDetails = Provider.of<HomeScreenProvider>(
-      context,
-      listen: false,
-    ).tailoredRecipesHomeData![widget.clickedIndex];
+    recipeDetails = homeProvider.tailoredRecipesHomeData![widget.clickedIndex];
   }
 
   @override
@@ -69,27 +69,48 @@ class _RecipeDetailsScreenState extends State<RecipeDetailsScreen>
         children: [
           ClipRRect(
             borderRadius: const BorderRadius.all(Radius.circular(16)),
-            child: Image.asset(
-              'assets/images/maxican.png',
-              height: 150,
-              width: double.infinity,
-              fit: BoxFit.cover,
-            ),
+            child: recipeDetails!.thumbnailImageId != null
+                ? FadeInImage(
+                    placeholder: AssetImage(
+                      'assets/images/cuisine_default.png',
+                    ),
+                    image: recipeDetails!.image != null
+                        ? NetworkImage(
+                            Utility.getImageUrl(
+                              recipeDetails!.image!,
+                              'recipe',
+                              'assets/images/cuisine_default.png',
+                            ),
+                          )
+                        : AssetImage('assets/images/cuisine_default.png'),
+                    width: double.infinity,
+                    fit: BoxFit.cover,
+                  )
+                : Image.asset(
+                    'assets/images/cuisine_default.png',
+                    height: 150,
+                    width: double.infinity,
+                    fit: BoxFit.cover,
+                  ),
           ),
-          Positioned.fill(
-            child: Align(
-              alignment: Alignment.center,
-              child: Container(
-                width: 36,
-                height: 36,
-                decoration: const BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Colors.red,
-                ),
-                child: const Icon(
-                  Icons.play_arrow,
-                  color: Colors.white,
-                  size: 20,
+          Visibility(
+            visible: recipeDetails!.imageId != null,
+            child: Positioned.fill(
+              child: Align(
+                alignment: Alignment.center,
+                child: Container(
+                  width: 42,
+                  height: 42,
+                  decoration:  BoxDecoration(
+                    border: BoxBorder.all(width: 1,color: AppColor.white),
+                    shape: BoxShape.circle,
+                    color: Colors.black,
+                  ),
+                  child: const Icon(
+                    Icons.play_arrow,
+                    color: Colors.white,
+                    size: 20,
+                  ),
                 ),
               ),
             ),
@@ -106,16 +127,16 @@ class _RecipeDetailsScreenState extends State<RecipeDetailsScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nunc sit amet finibus leo, id mattis urna. Phasellus vitae mauris risus tincidunt rutrum in non dolor.',
+          Text(
+            recipeDetails!.shortDescription ?? '',
             style: TextStyle(color: Colors.white60, fontSize: 13),
           ),
-          const SizedBox(height: 6),
-          const Text(
-            'Read More',
-            style: TextStyle(color: Colors.orange, fontSize: 13),
-          ),
 
+          // const SizedBox(height: 6),
+          // const Text(
+          //   'Read More',
+          //   style: TextStyle(color: Colors.orange, fontSize: 13),
+          // ),
           const SizedBox(height: 16),
           _nutritionRow(),
 
@@ -139,11 +160,11 @@ class _RecipeDetailsScreenState extends State<RecipeDetailsScreen>
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        _infoCard('Calories', '380 kcal'),
-        _infoCard('Protein', '12g'),
-        _infoCard('Carbs', '45gm'),
-        _infoCard('Fats', '14g'),
-        _infoCard('Fiber', '3g'),
+        _infoCard('Calories', '${recipeDetails!.calories} kcal'),
+        _infoCard('Protein', '${recipeDetails!.protein}g'),
+        _infoCard('Carbs', '${recipeDetails!.carbs}gm'),
+        _infoCard('Fats', '${recipeDetails!.fats}g'),
+        _infoCard('Fiber', '${recipeDetails!.fiber}g'),
       ],
     );
   }
@@ -182,12 +203,12 @@ class _RecipeDetailsScreenState extends State<RecipeDetailsScreen>
       spacing: 12,
       runSpacing: 12,
       children: [
-        _detailChip('Pre Time', '15 min'),
-        _detailChip('Protein', '12g'),
-        _detailChip('Carbs', '45gm'),
-        _detailChip('Difficulties', 'Medium'),
-        _detailChip('Skill Level', 'Intermediate'),
-        _detailChip('Cuisine', 'Italian'),
+        _detailChip('Pre Time', '${recipeDetails!.prepTime} min'),
+        _detailChip('Protein', '${recipeDetails!.protein}g'),
+        _detailChip('Carbs', '${recipeDetails!.carbs}gm'),
+        _detailChip('Difficulties', recipeDetails!.difficulty ?? ''),
+        _detailChip('Skill Level', recipeDetails!.skillLevel ?? ''),
+        _detailChip('Cuisine', recipeDetails!.cuisine ?? ''),
       ],
     );
   }
@@ -226,7 +247,7 @@ class _RecipeDetailsScreenState extends State<RecipeDetailsScreen>
       children: [
         TabBar(
           controller: _tabController,
-          indicatorColor: Colors.orange,
+          indicatorColor: AppColor.btnBackground,
           labelColor: Colors.white,
           unselectedLabelColor: Colors.white54,
           tabs: const [
@@ -246,21 +267,35 @@ class _RecipeDetailsScreenState extends State<RecipeDetailsScreen>
           child: TabBarView(
             controller: _tabController,
             children: [
-              _ingredientsList(),
-              const Center(
+              recipeDetails!.ingredientDetails!.isNotEmpty
+                  ? _ingredientsList(recipeDetails!.ingredientDetails!)
+                  : Center(
+                      child: Text(
+                        'No Ingredients',
+                        style: TextStyle(color: Colors.white70),
+                      ),
+                    ),
+                    recipeDetails!.instructions!.isNotEmpty?
+                    Text(
+                  recipeDetails!.instructions!,
+                  style: TextStyle(color: Colors.white70),
+                ):
+              Center(
                 child: Text(
-                  'Instructions',
+                  'No Instructions',
                   style: TextStyle(color: Colors.white70),
                 ),
               ),
-              const Center(
-                child: Text(
-                  'Utensils',
-                  style: TextStyle(color: Colors.white70),
-                ),
-              ),
-              const Center(
-                child: Text('Tips', style: TextStyle(color: Colors.white70)),
+              recipeDetails!.utensils!.isNotEmpty
+                  ? _utensilsList(recipeDetails!.utensils)
+                  : Center(
+                      child: Text(
+                        'No Utensils',
+                        style: TextStyle(color: Colors.white70),
+                      ),
+                    ),
+              Center(
+                child: Text('No Tips', style: TextStyle(color: Colors.white70)),
               ),
             ],
           ),
@@ -269,28 +304,43 @@ class _RecipeDetailsScreenState extends State<RecipeDetailsScreen>
     );
   }
 
-  Widget _ingredientsList() {
-    final items = [
-      '1 cups Arborio',
-      '4 cups chicken broth',
-      '0.5 cups wine',
-      '1 tbsp truffle oil',
-      '0.5 cups grated Parmigiano - Reggiano',
-      '1 tbsp butter',
-      'Salt and pepper to taste',
-    ];
+  Widget _ingredientsList(List<IngredientDetail> ingredientsList) {
+    List<String?> ingredients = ingredientsList
+        .map((ingredientsName) => ingredientsName.name)
+        .toList();
 
     return ListView.builder(
-      itemCount: items.length,
+      itemCount: ingredients.length,
       itemBuilder: (_, i) => Padding(
         padding: const EdgeInsets.symmetric(vertical: 6),
         child: Row(
           children: [
-            const Icon(Icons.circle, size: 6, color: Colors.orange),
+            const Icon(Icons.circle, size: 6, color: AppColor.btnBackground),
             const SizedBox(width: 8),
             Expanded(
               child: Text(
-                items[i],
+                ingredients[i] ?? 'No Ingredients',
+                style: const TextStyle(color: Colors.white70, fontSize: 13),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _utensilsList(List<String>? utensils) {
+    return ListView.builder(
+      itemCount: utensils!.length,
+      itemBuilder: (_, i) => Padding(
+        padding: const EdgeInsets.symmetric(vertical: 6),
+        child: Row(
+          children: [
+            const Icon(Icons.circle, size: 6, color: AppColor.btnBackground),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                utensils[i],
                 style: const TextStyle(color: Colors.white70, fontSize: 13),
               ),
             ),
@@ -459,8 +509,8 @@ class _RecipeDetailsScreenState extends State<RecipeDetailsScreen>
                 child: const Icon(Icons.arrow_back, color: Colors.white),
               ),
               const Spacer(),
-              const Text(
-                'Truffle Oil Risotto',
+              Text(
+                recipeDetails!.dishName ?? '',
                 style: TextStyle(
                   color: Colors.white,
                   fontSize: 18,
@@ -480,9 +530,9 @@ class _RecipeDetailsScreenState extends State<RecipeDetailsScreen>
               // LEFT INFO
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                children: const [
+                children: [
                   Text(
-                    'Chef Marco Recipe',
+                    recipeDetails!.chefName ?? '',
                     style: TextStyle(
                       color: Colors.white70,
                       fontSize: 13,
@@ -491,7 +541,7 @@ class _RecipeDetailsScreenState extends State<RecipeDetailsScreen>
                   ),
                   SizedBox(height: 4),
                   Text(
-                    'Italian Cuisine',
+                    recipeDetails!.cuisine ?? '',
                     style: TextStyle(
                       color: Colors.deepOrange,
                       fontSize: 12,
@@ -512,14 +562,14 @@ class _RecipeDetailsScreenState extends State<RecipeDetailsScreen>
                       Icon(Icons.star, color: Colors.amber, size: 14),
                       SizedBox(width: 4),
                       Text(
-                        '4.0 (1209)',
+                        '4.8 (120).',
                         style: TextStyle(color: Colors.white70, fontSize: 12),
                       ),
                     ],
                   ),
                   SizedBox(height: 4),
-                  const Text(
-                    'Top-Rated',
+                  Text(
+                    recipeDetails!.skillLevel ?? '',
                     style: TextStyle(color: Colors.white54, fontSize: 11),
                   ),
                 ],

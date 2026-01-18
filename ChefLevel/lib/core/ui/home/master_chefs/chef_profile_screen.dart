@@ -77,16 +77,17 @@ class ChefProfileScreen extends StatelessWidget {
                         fit: BoxFit.cover,
                       ),
                       Container(
-                        height: 56,
-                        width: 56,
+                        height: 42,
+                        width: 42,
                         decoration: BoxDecoration(
-                          color: Colors.red,
+                          border: BoxBorder.all(width: 1,color: AppColor.white),
+                          color: Colors.black,
                           shape: BoxShape.circle,
                         ),
                         child: const Icon(
                           Icons.play_arrow,
                           color: Colors.white,
-                          size: 32,
+                          size: 20,
                         ),
                       )
                     ],
